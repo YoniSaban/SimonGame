@@ -58,5 +58,6 @@ Progress marks, next to the milestone title in MILESTONES.md: no mark = not buil
 - **Run (dev):** `npm run dev` → open `http://localhost:5173/SimonGame/` (Node is at `C:\Program Files\nodejs`; add it to PATH if the shell doesn't find it)
 - **Run for phone testing (same Wi-Fi):** `npm run dev:phone` → open the "Network" address it prints, e.g. `http://<computer-ip>:5173/SimonGame/`
 - **Test:** `npm run test` (also: `npm run typecheck`, `npm run build`)
-- **Production build check:** `npm run build`, then `npm run preview` → open `http://localhost:4173/SimonGame/`
+- **Production build check:** `npm run build`, then `npm run preview` → open `http://localhost:4173/SimonGame/` (the PWA — install, offline, update message — works only here, not in `npm run dev`)
+- **Regenerate app icons** (after editing `public/icon.svg`): `npm run generate-pwa-assets`
 - **Deploy:** automatic — every push to `main` runs `.github/workflows/deploy.yml` → `https://yonisaban.github.io/SimonGame/`

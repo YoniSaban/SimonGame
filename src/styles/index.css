@@ -428,6 +428,30 @@ button:focus-visible {
   color: var(--white);
 }
 
+/* ---------- Update available (Home, idle only) ---------- */
+
+.update-bar {
+  width: min(100%, 300px);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-12);
+  margin-top: var(--space-12);
+  padding: var(--space-8) var(--space-8) var(--space-8) var(--space-16);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  font-size: var(--fs-caption);
+}
+
+.btn--secondary.update-bar__btn {
+  width: auto;
+  min-height: 40px;
+  margin-top: 0;
+  padding: var(--space-8) var(--space-16);
+  font-size: var(--fs-caption);
+}
+
 /* ---------- Delete confirmation ---------- */
 
 .confirm-dialog {

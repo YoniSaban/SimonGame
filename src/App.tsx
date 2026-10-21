@@ -5,6 +5,7 @@ import AboutScreen from './screens/AboutScreen';
 import { useGame } from './game/useGame';
 import { createResult } from './history/historyStore';
 import { useHistory } from './history/useHistory';
+import { applyUpdate, useUpdateAvailable } from './pwa/updateStore';
 
 export default function App() {
   // Screens are in-app views, not routes, so switching never reloads the page.
@@ -13,6 +14,7 @@ export default function App() {
   const game = useGame();
   const history = useHistory();
   const { record } = history;
+  const updateAvailable = useUpdateAvailable();
 
   // A finished game is recorded once, when it enters won/lost (not when the message shows), so leaving
   // during the end delay or message can't skip or repeat it. The gameId guard also covers Strict Mode.
@@ -46,6 +48,8 @@ export default function App() {
             onPress={game.pressColor}
             playTone={game.playTone}
             onDismiss={game.dismiss}
+            updateAvailable={updateAvailable}
+            onUpdate={applyUpdate}
           />
         ) : (
           <AboutScreen history={history} />

@@ -248,10 +248,7 @@ type HistoryData = {
 - **השהיה כמצב `paused` ב-Reducer:** Action `pause` מאפס את `inputIndex` ומעלה `presentationId` כדי שסיום Playback מיושן יתעלם; `resume` הוא כניסה רגילה ל-`presenting` עם `presentationId` חדש, ונשלח רק אחרי `unlockAudio()` מוצלח. ניווט לאודות, `visibilitychange` ל-`hidden` ו-`pagehide` קוראים לאותה פונקציית `pause`.
 - **היסטוריה:** מודול אחסון טהור (ללא React) שעוטף כל גישה ל-`localStorage` ב-`try/catch` ומסנן רשומות לא תקינות; Hook ב-`App`; רישום תוצאה ב-Effect עם `ref` ל-`gameId` האחרון שנרשם. מזהה הרשומה נוצר מזמן ומספר אקראי, לא מ-`crypto.randomUUID` (שאינו זמין בהקשר לא מאובטח).
 - **"אישור" בהודעת הסיום:** Action `dismiss` (רק מ-`won`/`lost`) מחזיר ל-`idle`, תוך שמירת `gameId` ו-`presentationId`. "אישור" אינו Gesture אודיו, ולכן `AudioContext` נפתח רק ב-"התחל משחק" וב-"המשך משחק".
-- **אייקונים ממקור SVG יחיד:** `public/icon.svg` נכתב פעם אחת (לוח בקוטר ~78% מהקנבס, בתוך ה-Safe Zone של Maskable, על `Background`), וממנו מופקים קובצי ה-PNG וה-Favicon בסקריפט (`@vite-pwa/assets-generator`) ונשמרים ב-`public/`, כך שה-CI אינו תלוי בכלי ההמרה.
 - **`base` זהה בכל הסביבות:** `base: '/SimonGame/'` ב-dev, ב-preview וב-build; `start_url` ו-`scope` נגזרים מאותו קבוע. כתובות מקומיות: `http://localhost:5173/SimonGame/` (dev) ו-`http://localhost:4173/SimonGame/` (preview).
-- **`id` מפורש ב-Manifest:** `id: '/SimonGame/app'`, כדי שזהות האפליקציה המותקנת לא תיגזר מ-`start_url`. אסור לשנות אותו לאחר ההתקנה הראשונה.
-- **עדכון גרסה (ראה סעיף 2.7):** רישום ב-`src/main.tsx` דרך `registerSW`; אין `skipWaiting` ואין `clientsClaim`; חלונית עדכון מוצגת רק במצב `idle`.
 
 ## החלטות מרכזיות (ADRs)
 
@@ -266,7 +263,7 @@ type HistoryData = {
 - Runtime: `react` `19.3.1`, `react-dom` `19.3.1`, `@fontsource/heebo` `5.3.0`.
 - Dev: `typescript` `7.0.2`, `vite` `8.3.5`, `@vitejs/plugin-react` `6.1.2`, `vitest` `5.0.5`, `jsdom` `30.1.3`, `@testing-library/react` `16.3.3`, `@testing-library/jest-dom` `7.0.1`, `@testing-library/user-event` `14.6.8`, `@types/react` `19.3.0`, `@types/react-dom` `19.3.0`.
 - Milestone 3: `canvas-confetti` `1.9.4` (Runtime), `@types/canvas-confetti` `1.9.0` (Dev).
-- `vite-plugin-pwa` יתווסף (בגרסה מדויקת) באבן הדרך שבה הוא נדרש, וירשם כאן.
+- Milestone 6 (Dev): `vite-plugin-pwa` `2.0.0`, `workbox-window` `7.4.1`, `@vite-pwa/assets-generator` `2.0.0`.
 
 **Consequences:** `package-lock.json` נשמר ב-Repository; ה-Workflow (מוקם ב-Milestone 4) ישתמש ב-Node `24.20.0`. שדרוג גרסה מתבצע רק בבקשה מפורשת.
 
@@ -333,3 +330,11 @@ type HistoryData = {
 **Decision:** `src/history/historyStore.ts` הוא מודול טהור שעוטף כל גישה ל-`localStorage` ב-`try/catch` ומחזיר הצלחה/כישלון במקום לזרוק; מפתח `simon.history.v1`, Validation לכל רשומה, ו-JSON פגום נחשב "היסטוריה לא זמינה". `useHistory` טוען פעם אחת, וטוען מחדש אחרי כל שמירה, כך שהתצוגה משקפת רק את מה שנשמר בפועל; כשלי קריאה/שמירה/מחיקה הם דגלים שמוצגים כהודעות במסך "אודות". הרישום מתבצע ב-Effect של `App` ברגע הכניסה ל-`won`/`lost` (זמן הלחיצה האחרונה), לא בהצגת ההודעה, עם `ref` ל-`gameId` האחרון שנרשם. מחיקה כותבת רשימה ריקה לאותו מפתח.
 
 **Consequences:** השהיה, Refresh, ניווט ו-dismiss אינם יוצרים רשומה, ויציאה בזמן ההודעה אינה משכפלת. ה-Reducer נשאר ללא Side Effects. שמירה על גבי נתונים פגומים מתחילה רשימה חדשה. הודעת כשל שמירה מוצגת באודות (ולא בהודעת הסיום).
+
+### ADR-10: PWA – אייקונים ממקור SVG יחיד, ועדכון גרסה רק בלחיצה וב-`idle`
+
+**Context:** Milestone 6 הופך את המשחק ל-PWA הניתן להתקנה ועובד Offline. עדכון גרסה אסור שירענן משחק פעיל (סעיף 2.7), והאייקון נוצר לפי הגדרת ה-App Icon ב-`DESIGN.md`.
+
+**Decision:** `public/icon.svg` הוא המקור היחיד (לוח בקוטר ~78% על `Background`, בתוך ה-Safe Zone של Maskable); `npm run generate-pwa-assets` (`pwa-assets.config.ts`, `minimal2023Preset` בלי Padding נוסף) מפיק ממנו את קובצי ה-PNG וה-Favicon, שנשמרים ב-`public/` וב-Git, כך שה-CI אינו מריץ את הכלי. `vite-plugin-pwa` מוגדר ב-`vite.config.ts` עם `generateSW`, `registerType: 'prompt'`, `injectRegister: false`, Manifest (`id: '/SimonGame/app'`; `start_url`/`scope` מאותו קבוע של `base`) ו-Precache של `js/css/html/svg/png/ico/woff/woff2`, כולל קובצי Heebo. `src/pwa/registerPwa.ts` נקרא מ-`main.tsx` ורושם `registerSW({ immediate: true, onNeedRefresh })`; `onNeedRefresh` שומר את פונקציית ההפעלה ב-`src/pwa/updateStore.ts` (Store קטן עם `useSyncExternalStore`, ללא תלות ב-virtual module כדי שהבדיקות לא יצטרכו אותו). `HomeScreen` מציג את הפס "יש גרסה חדשה" / "עדכן" רק כש-`status === 'idle'`; "עדכן" קורא ל-`updateSW(true)`, ששולח `SKIP_WAITING` לגרסה הממתינה ומרענן. אין `skipWaiting` אוטומטי ואין `clientsClaim`. ה-Service Worker לא פעיל ב-`npm run dev`; PWA נבדק רק ב-`build` + `preview`.
+
+**Consequences:** גרסה חדשה ממתינה בשקט עד שהשחקן לוחץ "עדכן" במצב `idle`; משחק פעיל, השהיה והודעת סיום מסתירים את הפס. שינוי באייקון דורש הרצה מחדש של `npm run generate-pwa-assets`. אסור לשנות את `id` של ה-Manifest אחרי ההתקנה הראשונה.

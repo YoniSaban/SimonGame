@@ -15,6 +15,8 @@ type Props = {
   onPress: (color: ColorId) => void;
   playTone: (color: ColorId) => () => void;
   onDismiss: () => void;
+  updateAvailable: boolean;
+  onUpdate: () => void;
 };
 
 const STATUS_TEXT: Partial<Record<GameState['status'], string>> = {
@@ -48,6 +50,8 @@ export default function HomeScreen({
   onPress,
   playTone,
   onDismiss,
+  updateAvailable,
+  onUpdate,
 }: Props) {
   const { status } = game;
   const ended = status === 'won' || status === 'lost';
@@ -88,6 +92,15 @@ export default function HomeScreen({
           <p className="hint">{HINT_TEXT[status] ?? ''}</p>
         )}
       </div>
+      {/* Offered only before a game starts, so an update can never interrupt one. */}
+      {updateAvailable && status === 'idle' && (
+        <div className="update-bar" role="status">
+          <span>יש גרסה חדשה</span>
+          <button type="button" className="btn btn--secondary update-bar__btn" onClick={onUpdate}>
+            עדכן
+          </button>
+        </div>
+      )}
     </section>
   );
 }
