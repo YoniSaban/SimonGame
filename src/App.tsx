@@ -11,8 +11,8 @@ export default function App() {
   const game = useGame();
 
   function navigate(next: Screen) {
-    // Temporary until Milestone 4 (pause): leaving for About cancels an active game.
-    if (next === 'about') game.abortGame();
+    // Leaving for About pauses an active game; it resumes only by "resume game".
+    if (next === 'about') game.pauseGame();
     setScreen(next);
   }
 
@@ -27,6 +27,7 @@ export default function App() {
             endingVisible={game.endingVisible}
             audioError={game.audioError}
             onStart={game.startGame}
+            onResume={game.resumeGame}
             onPress={game.pressColor}
             playTone={game.playTone}
             onDismiss={game.dismiss}

@@ -2,8 +2,9 @@ import { useEffect, useRef, useState, type KeyboardEvent, type PointerEvent } fr
 import { COLORS, type ColorId, type GameColor } from '../game/colors';
 import { PRESS_MIN_MS } from '../game/config';
 
-// show: full colors, no input. presenting: playback, others dimmed. input: player's turn. locked: full colors, no input.
-export type BoardMode = 'show' | 'presenting' | 'input' | 'locked';
+// show: full colors, no input. presenting: playback, others dimmed. input: player's turn.
+// paused: all dimmed, no input. locked: full colors, no input.
+export type BoardMode = 'show' | 'presenting' | 'input' | 'paused' | 'locked';
 
 type Props = {
   mode: BoardMode;
@@ -14,13 +15,14 @@ type Props = {
 
 export default function Board({ mode, litColor, onPress, playTone }: Props) {
   return (
-    <div className={`board${mode === 'presenting' ? ' board--presenting' : ''}`}>
+    <div className={`board${mode === 'presenting' || mode === 'paused' ? ` board--${mode}` : ''}`}>
       {COLORS.map((color) => (
         <Pad
           key={color.id}
           color={color}
           lit={litColor === color.id}
           enabled={mode === 'input'}
+          cancelPress={mode === 'paused' || mode === 'show'}
           onPress={onPress}
           playTone={playTone}
         />
@@ -34,6 +36,8 @@ type PadProps = {
   color: GameColor;
   lit: boolean;
   enabled: boolean;
+  // The game paused or reset: a press still in progress must end at once.
+  cancelPress: boolean;
   onPress: (color: ColorId) => void;
   playTone: (color: ColorId) => () => void;
 };
@@ -41,7 +45,7 @@ type PadProps = {
 // A press is judged on pointerdown (click only fires on release). The highlight lasts
 // at least PRESS_MIN_MS, or as long as the finger stays down, whichever is longer.
 // The pad's tone sounds exactly as long as its highlight.
-function Pad({ color, lit, enabled, onPress, playTone }: PadProps) {
+function Pad({ color, lit, enabled, cancelPress, onPress, playTone }: PadProps) {
   const [pressed, setPressed] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const minElapsed = useRef(true);
@@ -60,6 +64,16 @@ function Pad({ color, lit, enabled, onPress, playTone }: PadProps) {
     if (!pressed) return;
     return playTone(color.id);
   }, [pressed, playTone, color.id]);
+
+  // A press that ends a round keeps its highlight; a pause ends it now, so no highlight or tone stays.
+  useEffect(() => {
+    if (!cancelPress) return;
+    clearTimeout(timer.current);
+    removeReleaseListeners.current?.();
+    minElapsed.current = true;
+    held.current = false;
+    setPressed(false);
+  }, [cancelPress]);
 
   function maybeRelease() {
     if (minElapsed.current && !held.current) setPressed(false);

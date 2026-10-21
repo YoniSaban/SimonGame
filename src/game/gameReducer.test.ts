@@ -28,7 +28,8 @@ describe('gameReducer', () => {
   it('ignores actions from states that do not allow them', () => {
     expect(gameReducer(initialState, { type: 'press', color: 'red', nextColor: 'red' })).toBe(initialState);
     expect(gameReducer(initialState, { type: 'dismiss' })).toBe(initialState);
-    expect(gameReducer(initialState, { type: 'abort' })).toBe(initialState);
+    expect(gameReducer(initialState, { type: 'pause' })).toBe(initialState);
+    expect(gameReducer(initialState, { type: 'resume' })).toBe(initialState);
 
     const presenting = gameReducer(initialState, { type: 'start', color: 'green' });
     expect(gameReducer(presenting, { type: 'press', color: 'green', nextColor: 'red' })).toBe(presenting);
@@ -97,13 +98,49 @@ describe('gameReducer', () => {
     expect(s).toMatchObject({ status: 'idle', round: 1, sequence: [], gameId: lost.gameId });
   });
 
-  it('abort cancels an active game and invalidates pending playback', () => {
+  it('pause keeps the sequence and round, drops partial input and invalidates pending playback', () => {
     const presenting = gameReducer(initialState, { type: 'start', color: 'green' });
-    const s = gameReducer(presenting, { type: 'abort' });
-    expect(s).toMatchObject({ status: 'idle', round: 1, sequence: [] });
-    expect(s.presentationId).toBeGreaterThan(presenting.presentationId);
-    expect(gameReducer(s, { type: 'presentationDone', presentationId: presenting.presentationId })).toBe(s);
+    const paused = gameReducer(presenting, { type: 'pause' });
+    expect(paused).toMatchObject({ status: 'paused', sequence: ['green'], round: 1, gameId: presenting.gameId });
+    expect(paused.presentationId).toBeGreaterThan(presenting.presentationId);
+    expect(gameReducer(paused, { type: 'presentationDone', presentationId: presenting.presentationId })).toBe(paused);
+    expect(gameReducer(paused, { type: 'presentationDone', presentationId: paused.presentationId })).toBe(paused);
 
-    expect(gameReducer(started('green'), { type: 'abort' }).status).toBe('idle');
+    // Mid-input in round 3: partial input is dropped, nothing else changes.
+    let s = completeRound(completeRound(started('green'), 'red'), 'blue');
+    s = gameReducer(s, { type: 'press', color: 'green', nextColor: 'red' });
+    expect(s.inputIndex).toBe(1);
+    const p = gameReducer(s, { type: 'pause' });
+    expect(p).toMatchObject({ status: 'paused', round: 3, inputIndex: 0, completedRounds: 2, sequence: ['green', 'red', 'blue'] });
+    expect(gameReducer(p, { type: 'press', color: 'red', nextColor: 'red' })).toBe(p);
+    expect(gameReducer(p, { type: 'pause' })).toBe(p);
+    expect(gameReducer(p, { type: 'start', color: 'red' })).toBe(p);
+  });
+
+  it('resume replays the same round from the start, only once', () => {
+    let s = completeRound(started('green'), 'red');
+    s = gameReducer(s, { type: 'press', color: 'green', nextColor: 'red' });
+    const paused = gameReducer(s, { type: 'pause' });
+    const resumed = gameReducer(paused, { type: 'resume' });
+    expect(resumed).toMatchObject({ status: 'presenting', round: 2, inputIndex: 0, sequence: ['green', 'red'], resumed: true });
+    expect(resumed.presentationId).toBeGreaterThan(paused.presentationId);
+    expect(gameReducer(resumed, { type: 'resume' })).toBe(resumed);
+
+    // The next round's playback is a normal one again.
+    let next = gameReducer(resumed, { type: 'presentationDone', presentationId: resumed.presentationId });
+    next = completeRound(next, 'yellow');
+    expect(next).toMatchObject({ round: 3, resumed: false });
+  });
+
+  it('pause during the wait between rounds keeps the new round with its added color', () => {
+    const s = run(started('green'), { type: 'press', color: 'green', nextColor: 'blue' });
+    expect(s).toMatchObject({ status: 'presenting', round: 2 });
+    const p = gameReducer(s, { type: 'pause' });
+    expect(p).toMatchObject({ status: 'paused', round: 2, completedRounds: 1, sequence: ['green', 'blue'] });
+  });
+
+  it('pause from an end state dismisses it to idle', () => {
+    const lost = run(started('green'), { type: 'press', color: 'red', nextColor: 'red' });
+    expect(gameReducer(lost, { type: 'pause' })).toMatchObject({ status: 'idle', round: 1, sequence: [], gameId: lost.gameId });
   });
 });

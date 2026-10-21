@@ -268,7 +268,7 @@ type HistoryData = {
 - Milestone 3: `canvas-confetti` `1.9.4` (Runtime), `@types/canvas-confetti` `1.9.0` (Dev).
 - `vite-plugin-pwa` יתווסף (בגרסה מדויקת) באבן הדרך שבה הוא נדרש, וירשם כאן.
 
-**Consequences:** `package-lock.json` נשמר ב-Repository; ה-Workflow ב-Milestone 7 ישתמש ב-Node `24.20.0`. שדרוג גרסה מתבצע רק בבקשה מפורשת.
+**Consequences:** `package-lock.json` נשמר ב-Repository; ה-Workflow (מוקם ב-Milestone 4) ישתמש ב-Node `24.20.0`. שדרוג גרסה מתבצע רק בבקשה מפורשת.
 
 ### ADR-2: תזמון הצגת הרצף ב-Hook עם `AbortController` ו-`presentationId`
 
@@ -309,3 +309,19 @@ type HistoryData = {
 **Decision:** ה-Effect הקיים של `won`/`lost` ב-`useGame` מפעיל באותו Callback את `setEndingVisible`, את `playEndSound` ובניצחון בלבד את `fireConfetti()` (`src/effects/confetti.ts`), וה-Cleanup שלו עוצר את שלושתם (`confetti.reset()` מסיר את הקנבס). הקונפטי בארבעת צבעי המשחק, ב-`zIndex` מעל חלונית הסיום; ב-`prefers-reduced-motion: reduce` – פרץ יחיד קטן וקצר במקום סדרת פרצים.
 
 **Consequences:** "אישור" ומעבר ל"אודות" מנקים צליל וקונפטי דרך אותו Cleanup. ב-Milestone 4 יציאה בזמן ההמתנה או ההודעה תעבור באותו מסלול.
+
+### ADR-7: השהיה כמצב `paused` עם `resumed`, ו-Visibility Handler ב-`useGame`
+
+**Context:** Milestone 4 מחליף את הביטול הזמני (ADR-4) בהשהיה אמיתית: מעבר ל"אודות", הסתרת האפליקציה ו-`pagehide` צריכים לעצור הכל מיד, לשמור את הרצף והשלב, ולחדש רק ב-"המשך משחק" עם הצגה מלאה מחדש (סעיף 2.3, כללים 5–11).
+
+**Decision:** ל-Reducer נוספו המצב `paused` וה-Actions `pause`/`resume`; `abort` הוסר. `pause` מ-`presenting`/`awaitingInput` שומר `sequence`/`round`, מאפס `inputIndex` ומעלה `presentationId`; מ-`won`/`lost` הוא dismiss אוטומטי ל-`idle`. `resume` (רק מ-`paused`) נכנס ל-`presenting` עם `resumed: true`, כך שה-Controller ממתין `1000ms` כמו אחרי "התחל משחק" (ולא את ההמתנות שבין שלבים), וחיווי השלב אינו מציג את השלב הקודם. "המשך משחק" עובר דרך אותו `unlockAudio` ואותה הגנה מלחיצה כפולה של "התחל משחק"; בכשל נשארים מושהים עם ההודעה **"לא הצלחנו להפעיל את הצליל. לחץ שוב על "המשך משחק"."**. `useGame` מאזין ל-`visibilitychange` (hidden) ול-`pagehide` וקורא ל-`pauseGame` – אותה פונקציה שהניווט ל"אודות" קורא לה. רבע לוח שנלחץ בזמן ההשהיה משתחרר מיד (`cancelPress`), אבל לחיצה שמסיימת שלב שומרת את ההארה של 300ms.
+
+**Consequences:** ה-Cleanups הקיימים של אפקט ההצגה ואפקט הסיום מבטלים Timers, הארה, צליל, הודעה וקונפטי כשהמצב משתנה; `stopAllSounds` עוצר צליל לחיצה. ADR-4 מוחלף.
+
+### ADR-8: Workflow פריסה ל-GitHub Pages
+
+**Context:** מ-Milestone 4 כל Push ל-`main` מפרסם אוטומטית (סעיף 2.9).
+
+**Decision:** `.github/workflows/deploy.yml`: Job `build` (`npm ci` → typecheck → בדיקות → build → `upload-pages-artifact` של `dist`) ו-Job `deploy` (`deploy-pages`) שתלוי בו. Node מתוך `.nvmrc`. הרשאות `contents: read`, `pages: write`, `id-token: write`; `concurrency` בלי לבטל פריסה באמצע. גרסאות ה-Actions (Major עדכני, 21 באוקטובר 2026): `actions/checkout@v7`, `actions/setup-node@v7`, `actions/upload-pages-artifact@v5`, `actions/deploy-pages@v5`. נוסף גם `workflow_dispatch` להרצה ידנית מתוך GitHub.
+
+**Consequences:** בדיקה או Build שנכשלו עוצרים לפני פריסה. נדרשת הגדרה חד-פעמית: Settings → Pages → Source: GitHub Actions.

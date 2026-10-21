@@ -11,14 +11,16 @@ export function useGame() {
   // The color lit by playback right now, if any.
   const [litColor, setLitColor] = useState<ColorId | null>(null);
   // The reducer advances `round` at once. Until the playback whose id is stored here passes its
-  // first wait, the completed round stays on screen. Derived in render, so there's no flicker.
+  // first wait, the completed round stays on screen (not on a resume, which keeps its round).
+  // Derived in render, so there's no flicker.
   const [revealedPresentationId, setRevealedPresentationId] = useState(0);
   const [endingVisible, setEndingVisible] = useState(false);
   // Audio failed to start: the game must not run silently, so it stays idle with a message.
   const [audioError, setAudioError] = useState(false);
-  const starting = useRef(false);
+  // Guards against a double tap on "start game" / "resume game" while audio is unlocking.
+  const unlocking = useRef(false);
 
-  const { status, presentationId, round, sequence } = state;
+  const { status, presentationId, round, sequence, resumed } = state;
 
   // Sequence controller: one run per entry into `presenting`. Cleanup aborts every pending timer
   // and the playing tone, and a stale completion is also rejected by the reducer through `presentationId`.
@@ -29,7 +31,7 @@ export function useGame() {
     let stopTone: (() => void) | null = null;
 
     const play = async () => {
-      if (round === 1) {
+      if (round === 1 || resumed) {
         await sleep(START_DELAY_MS, signal);
       } else {
         await sleep(ROUND_DONE_MS, signal);
@@ -57,7 +59,7 @@ export function useGame() {
       stopTone?.();
       setLitColor(null);
     };
-  }, [status, presentationId, round, sequence]);
+  }, [status, presentationId, round, sequence, resumed]);
 
   // The win/loss message, end sound and (on a win) confetti appear together, a fixed delay
   // after the final press. Leaving the end state cancels all three.
@@ -78,39 +80,59 @@ export function useGame() {
     };
   }, [status]);
 
-  const startGame = useCallback(async () => {
-    if (starting.current) return;
-    starting.current = true;
+  // Called first thing in the click handler, so the browser sees the unlock as part of the gesture.
+  // The game only moves on once audio is running.
+  const withAudio = useCallback(async (onReady: () => void) => {
+    if (unlocking.current) return;
+    unlocking.current = true;
     try {
-      // Called first thing in the click handler, so the browser sees it as part of the gesture.
       const ok = await unlockAudio();
       setAudioError(!ok);
-      if (ok) dispatch({ type: 'start', color: randomColor() });
+      if (ok) onReady();
     } finally {
-      starting.current = false;
+      unlocking.current = false;
     }
   }, []);
+
+  const startGame = useCallback(() => withAudio(() => dispatch({ type: 'start', color: randomColor() })), [withAudio]);
+  const resumeGame = useCallback(() => withAudio(() => dispatch({ type: 'resume' })), [withAudio]);
   const pressColor = useCallback(
     (color: ColorId) => dispatch({ type: 'press', color, nextColor: randomColor() }),
     [],
   );
   const dismiss = useCallback(() => dispatch({ type: 'dismiss' }), []);
-  const abortGame = useCallback(() => {
-    dispatch({ type: 'abort' });
+  // Pausing changes the status, so the effect cleanups above cancel playback, timers, highlights,
+  // the end message and confetti; this also stops any pad tone still sounding.
+  const pauseGame = useCallback(() => {
+    dispatch({ type: 'pause' });
     stopAllSounds();
   }, []);
+
+  // Visibility handler: hiding the app pauses it; coming back never resumes on its own.
+  useEffect(() => {
+    const onVisibility = () => {
+      if (document.visibilityState === 'hidden') pauseGame();
+    };
+    document.addEventListener('visibilitychange', onVisibility);
+    window.addEventListener('pagehide', pauseGame);
+    return () => {
+      document.removeEventListener('visibilitychange', onVisibility);
+      window.removeEventListener('pagehide', pauseGame);
+    };
+  }, [pauseGame]);
 
   return {
     state,
     litColor,
     shownRound:
-      status === 'presenting' && round > 1 && revealedPresentationId !== presentationId ? round - 1 : round,
+      status === 'presenting' && round > 1 && !resumed && revealedPresentationId !== presentationId ? round - 1 : round,
     endingVisible,
     audioError,
     startGame,
+    resumeGame,
     pressColor,
     playTone,
     dismiss,
-    abortGame,
+    pauseGame,
   };
 }

@@ -1,7 +1,7 @@
 import type { ColorId } from './colors';
 import { MAX_ROUNDS } from './config';
 
-export type Status = 'idle' | 'presenting' | 'awaitingInput' | 'won' | 'lost';
+export type Status = 'idle' | 'presenting' | 'awaitingInput' | 'paused' | 'won' | 'lost';
 
 export type GameState = {
   status: Status;
@@ -10,7 +10,8 @@ export type GameState = {
   inputIndex: number;
   completedRounds: number; // 0–10
   gameId: number; // bumped on every new game
-  presentationId: number; // bumped on every playback start and on abort, so stale playback is ignored
+  presentationId: number; // bumped on every playback start and on pause, so stale playback is ignored
+  resumed: boolean; // the current playback was started by "resume game"
 };
 
 // Random colors are created outside and carried in the action, keeping the reducer pure.
@@ -19,8 +20,8 @@ export type GameAction =
   | { type: 'presentationDone'; presentationId: number }
   | { type: 'press'; color: ColorId; nextColor: ColorId }
   | { type: 'dismiss' }
-  // Temporary until Milestone 4 replaces it with a real pause.
-  | { type: 'abort' };
+  | { type: 'pause' }
+  | { type: 'resume' };
 
 export const initialState: GameState = {
   status: 'idle',
@@ -30,10 +31,11 @@ export const initialState: GameState = {
   completedRounds: 0,
   gameId: 0,
   presentationId: 0,
+  resumed: false,
 };
 
 function toIdle(state: GameState): GameState {
-  return { ...state, status: 'idle', sequence: [], round: 1, inputIndex: 0 };
+  return { ...state, status: 'idle', sequence: [], round: 1, inputIndex: 0, resumed: false };
 }
 
 // Actions sent from a state that doesn't allow them return the same state unchanged.
@@ -49,6 +51,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         completedRounds: 0,
         gameId: state.gameId + 1,
         presentationId: state.presentationId + 1,
+        resumed: false,
       };
 
     case 'presentationDone':
@@ -76,6 +79,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         inputIndex: 0,
         completedRounds: state.round,
         presentationId: state.presentationId + 1,
+        resumed: false,
       };
     }
 
@@ -83,8 +87,15 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       if (state.status !== 'won' && state.status !== 'lost') return state;
       return toIdle(state);
 
-    case 'abort':
-      if (state.status === 'idle') return state;
-      return { ...toIdle(state), presentationId: state.presentationId + 1 };
+    case 'pause':
+      // Leaving during the end delay or message dismisses it; the result was already final.
+      if (state.status === 'won' || state.status === 'lost') return toIdle(state);
+      if (state.status !== 'presenting' && state.status !== 'awaitingInput') return state;
+      // Sequence and round are kept; partial input of this round is dropped.
+      return { ...state, status: 'paused', inputIndex: 0, presentationId: state.presentationId + 1 };
+
+    case 'resume':
+      if (state.status !== 'paused') return state;
+      return { ...state, status: 'presenting', inputIndex: 0, presentationId: state.presentationId + 1, resumed: true };
   }
 }

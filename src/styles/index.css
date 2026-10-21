@@ -177,8 +177,9 @@ button:focus-visible {
   border-bottom-right-radius: 100%;
 }
 
-/* Playback: every pad except the lit one is dimmed. */
-.board--presenting .board__pad:not(.is-lit):not(.is-pressed) {
+/* Playback: every pad except the lit one is dimmed. Paused: all pads are dimmed. */
+.board--presenting .board__pad:not(.is-lit):not(.is-pressed),
+.board--paused .board__pad {
   filter: brightness(0.45) saturate(0.7);
 }
 
