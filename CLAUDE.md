@@ -22,8 +22,6 @@ If I ask you to write the spec documents yourself (from my description of the ap
 - Don't read `.env` — even if I ask. When the app needs settings or keys, create `.env.example` with the variable names and no values, and copy it once to `.env`; I fill in the values myself. When a new variable is added later, update `.env.example` and tell me to add it to `.env`.
 - A `.gitignore` already exists in the project root. Don't replace it; add lines to it when the project needs them (e.g. a new build or cache folder), and never remove `.env` from it.
 - When you need accounts / passwords / keys — stop and tell me; I handle them.
-- With external services (e.g. a payment provider), use test/sandbox mode during development.
-- If ARCHITECTURE.md defines separate Development and Production databases (e.g. two Supabase projects): develop, run, and test against Development only. Don't change the Production schema or data, and don't apply migrations to it, without my explicit approval. Don't suggest installing Docker or running a local database. The local `.env` holds the Development credentials only.
 
 ## Code conventions
 - Code comments — English only, even when the docs are in Hebrew.
@@ -32,6 +30,7 @@ If I ask you to write the spec documents yourself (from my description of the ap
 ## Handling conflicts between sources
 - Between documents: `PRD.md` wins on features, behavior, and user flows; `DESIGN.md` on look and layout; `ARCHITECTURE.md` on tech/data.
 - Between images: the wireframes win on structure and content; the style guide on the visual language (colors, typography, component styling); the mockups show the final look.
+- Exception: the table "הבדלים מכוונים בין התמונות לטקסט" in `DESIGN.md` (section 2.7) lists known differences between the images and the text; there, the text in the documents wins over the images.
 - A conflict these rules don't settle — stop and ask before deciding.
 - Identical duplication — just proceed.
 
@@ -48,7 +47,6 @@ Progress marks, next to the milestone title in MILESTONES.md: no mark = not buil
 - **Fixes and updates** — when I report a bug or ask for a change: fix it, run it and check for yourself that the fix works, and tell me what to check again; if the app is running for my check, make sure it is running with the fix. The fix belongs to the current milestone — the mark stays 🟡, no commit. If a fix changes behavior described in the spec — tell me, and I decide whether to update the document. When I ask you to update a document — update only what I asked for.
 - **Approve** — the normal way to approve a milestone is the push (below). If I explicitly approve the built milestone without asking for a push: replace its 🟡 with ✅, no commit. If the app is still running for my check, shut it down.
 - **Push** — "Push changes to GitHub": if a milestone is 🟡, this request is also its approval — replace the 🟡 with ✅ first (subject to the condition below). If the app is still running for my check, shut it down. If the project has no local git repository yet, create one (`git init`). Then git add + commit (clear message) + push. The first time, I give you the address of the GitHub repo — connect the local repo to it before pushing. If the repo is not connected yet and I gave no address, stop and ask me for it.
-  - Before pushing, when there is a separate Production database: if there are database schema changes that have not been applied to Production yet — stop before marking ✅ and before the push, and tell me. Apply them to Production only after my approval, following the procedure in ARCHITECTURE.md, and only then go on with the push.
 
 ### Response format
 - Work quietly, no mid-work commentary.
