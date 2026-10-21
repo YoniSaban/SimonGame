@@ -357,6 +357,136 @@ button:focus-visible {
   color: var(--text-muted);
 }
 
+/* ---------- History (About) ---------- */
+
+.storage-error {
+  width: 100%;
+  margin: 0;
+  padding: var(--space-8) var(--space-12);
+  background: var(--surface);
+  border: 1px solid var(--red);
+  border-radius: var(--radius-card);
+  color: var(--white);
+  font-size: var(--fs-caption);
+}
+
+.history-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.history-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-12);
+  padding: var(--space-12) var(--space-16);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  text-align: start;
+}
+
+.history-card__main {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.history-card__rounds {
+  font-weight: 700;
+}
+
+.history-card__outcome {
+  font-size: var(--fs-caption);
+}
+
+.history-card__outcome--win {
+  color: var(--green);
+}
+
+.history-card__outcome--loss {
+  color: #ff6b62;
+}
+
+.history-card__date {
+  color: var(--text-muted);
+  font-size: var(--fs-caption);
+  white-space: nowrap;
+}
+
+.btn--secondary {
+  width: min(100%, 300px);
+  margin-top: var(--space-8);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--white);
+}
+
+/* ---------- Delete confirmation ---------- */
+
+.confirm-dialog {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-16);
+  background: rgba(3, 8, 16, 0.8);
+}
+
+.confirm-dialog__card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-12);
+  width: min(100%, 320px);
+  padding: var(--space-24) var(--space-16) var(--space-16);
+  background: var(--white);
+  border-radius: var(--radius-card);
+  color: var(--background);
+  text-align: center;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
+}
+
+.confirm-dialog__title {
+  margin: 0;
+  font-size: var(--fs-h3);
+  font-weight: 700;
+}
+
+.confirm-dialog__text {
+  margin: 0;
+  color: #4a5568;
+  font-size: var(--fs-caption);
+}
+
+.confirm-dialog__buttons {
+  display: flex;
+  gap: var(--space-8);
+  margin-top: var(--space-8);
+}
+
+.confirm-dialog__buttons .btn {
+  flex: 1;
+  border-radius: var(--radius-card);
+}
+
+.btn--danger {
+  background: var(--red);
+  color: var(--white);
+}
+
+.btn--light {
+  background: var(--soft-gray);
+  color: var(--background);
+}
+
 /* ---------- Navigation ---------- */
 
 .navbar {

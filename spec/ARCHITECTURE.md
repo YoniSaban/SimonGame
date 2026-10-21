@@ -325,3 +325,11 @@ type HistoryData = {
 **Decision:** `.github/workflows/deploy.yml`: Job `build` (`npm ci` → typecheck → בדיקות → build → `upload-pages-artifact` של `dist`) ו-Job `deploy` (`deploy-pages`) שתלוי בו. Node מתוך `.nvmrc`. הרשאות `contents: read`, `pages: write`, `id-token: write`; `concurrency` בלי לבטל פריסה באמצע. גרסאות ה-Actions (Major עדכני, 21 באוקטובר 2026): `actions/checkout@v7`, `actions/setup-node@v7`, `actions/upload-pages-artifact@v5`, `actions/deploy-pages@v5`. נוסף גם `workflow_dispatch` להרצה ידנית מתוך GitHub.
 
 **Consequences:** בדיקה או Build שנכשלו עוצרים לפני פריסה. נדרשת הגדרה חד-פעמית: Settings → Pages → Source: GitHub Actions.
+
+### ADR-9: רישום תוצאה בכניסה ל-`won`/`lost`, ב-Effect של `App` עם Guard של `gameId`
+
+**Context:** Milestone 5 מוסיף היסטוריה ב-`localStorage`. כל משחק שהסתיים נרשם פעם אחת בלבד, גם אם השחקן יוצא בזמן ההמתנה לפני הודעת הסיום או בזמן הצגתה, וגם תחת React Strict Mode; כשל אחסון אינו חוסם משחק (סעיף 2.3 כלל 8, סעיף 2.5).
+
+**Decision:** `src/history/historyStore.ts` הוא מודול טהור שעוטף כל גישה ל-`localStorage` ב-`try/catch` ומחזיר הצלחה/כישלון במקום לזרוק; מפתח `simon.history.v1`, Validation לכל רשומה, ו-JSON פגום נחשב "היסטוריה לא זמינה". `useHistory` טוען פעם אחת, וטוען מחדש אחרי כל שמירה, כך שהתצוגה משקפת רק את מה שנשמר בפועל; כשלי קריאה/שמירה/מחיקה הם דגלים שמוצגים כהודעות במסך "אודות". הרישום מתבצע ב-Effect של `App` ברגע הכניסה ל-`won`/`lost` (זמן הלחיצה האחרונה), לא בהצגת ההודעה, עם `ref` ל-`gameId` האחרון שנרשם. מחיקה כותבת רשימה ריקה לאותו מפתח.
+
+**Consequences:** השהיה, Refresh, ניווט ו-dismiss אינם יוצרים רשומה, ויציאה בזמן ההודעה אינה משכפלת. ה-Reducer נשאר ללא Side Effects. שמירה על גבי נתונים פגומים מתחילה רשימה חדשה. הודעת כשל שמירה מוצגת באודות (ולא בהודעת הסיום).
