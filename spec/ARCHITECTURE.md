@@ -255,4 +255,16 @@ type HistoryData = {
 
 ## החלטות מרכזיות (ADRs)
 
-> נוספות כאן במהלך הבנייה, לפי הכללים ב-`CLAUDE.md`. טרם נרשמו החלטות.
+> נוספות כאן במהלך הבנייה, לפי הכללים ב-`CLAUDE.md`.
+
+### ADR-1: נעילת גרסאות הכלים
+
+**Context:** סעיף 2.9 דורש לקבוע בעת הקמת הפרויקט את הגרסאות היציבות העדכניות ולנעול אותן במדויק, כדי שה-Build יהיה זהה בכל מחשב וב-CI.
+
+**Decision:** נבחרו (21 באוקטובר 2026) הגרסאות הבאות, ונרשמו ב-`package.json` בלי `^`/`~`:
+- Node.js `24.20.0` (LTS) – ב-`.nvmrc` ובשדה `engines`; npm `11.19.0`.
+- Runtime: `react` `19.3.1`, `react-dom` `19.3.1`, `@fontsource/heebo` `5.3.0`.
+- Dev: `typescript` `7.0.2`, `vite` `8.3.5`, `@vitejs/plugin-react` `6.1.2`, `vitest` `5.0.5`, `jsdom` `30.1.3`, `@testing-library/react` `16.3.3`, `@testing-library/jest-dom` `7.0.1`, `@testing-library/user-event` `14.6.8`, `@types/react` `19.3.0`, `@types/react-dom` `19.3.0`.
+- `canvas-confetti` ו-`vite-plugin-pwa` יתווספו (בגרסה מדויקת) באבני הדרך שבהן הם נדרשים, ויירשמו כאן.
+
+**Consequences:** `package-lock.json` נשמר ב-Repository; ה-Workflow ב-Milestone 7 ישתמש ב-Node `24.20.0`. שדרוג גרסה מתבצע רק בבקשה מפורשת.
