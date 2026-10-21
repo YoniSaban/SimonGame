@@ -25,8 +25,10 @@ export default function App() {
             litColor={game.litColor}
             shownRound={game.shownRound}
             endingVisible={game.endingVisible}
+            audioError={game.audioError}
             onStart={game.startGame}
             onPress={game.pressColor}
+            playTone={game.playTone}
             onDismiss={game.dismiss}
           />
         ) : (

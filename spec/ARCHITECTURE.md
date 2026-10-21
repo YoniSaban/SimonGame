@@ -265,7 +265,8 @@ type HistoryData = {
 - Node.js `24.20.0` (LTS) – ב-`.nvmrc` ובשדה `engines`; npm `11.19.0`.
 - Runtime: `react` `19.3.1`, `react-dom` `19.3.1`, `@fontsource/heebo` `5.3.0`.
 - Dev: `typescript` `7.0.2`, `vite` `8.3.5`, `@vitejs/plugin-react` `6.1.2`, `vitest` `5.0.5`, `jsdom` `30.1.3`, `@testing-library/react` `16.3.3`, `@testing-library/jest-dom` `7.0.1`, `@testing-library/user-event` `14.6.8`, `@types/react` `19.3.0`, `@types/react-dom` `19.3.0`.
-- `canvas-confetti` ו-`vite-plugin-pwa` יתווספו (בגרסה מדויקת) באבני הדרך שבהן הם נדרשים, ויירשמו כאן.
+- Milestone 3: `canvas-confetti` `1.9.4` (Runtime), `@types/canvas-confetti` `1.9.0` (Dev).
+- `vite-plugin-pwa` יתווסף (בגרסה מדויקת) באבן הדרך שבה הוא נדרש, וירשם כאן.
 
 **Consequences:** `package-lock.json` נשמר ב-Repository; ה-Workflow ב-Milestone 7 ישתמש ב-Node `24.20.0`. שדרוג גרסה מתבצע רק בבקשה מפורשת.
 
@@ -292,3 +293,19 @@ type HistoryData = {
 **Decision:** Action זמני `abort` מחזיר מכל מצב פעיל ל-`idle` ומעלה `presentationId`. `App` שולח אותו לפני מעבר ל"אודות". לא נרשמת תוצאה.
 
 **Consequences:** ב-Milestone 4 הקריאה הזאת תוחלף ב-`pause`, ו-`abort` יוסר או יצומצם.
+
+### ADR-5: Audio Engine כמודול יחיד, וצליל הלחיצה צמוד להארה
+
+**Context:** סעיף 2.5 דורש לפתוח את `AudioContext` רק מתוך Gesture, לא להתקדם בשקט כשהפתיחה נכשלת, ולעצור צלילים מיד בביטול. משך צליל הלחיצה צריך להיות זהה להארה (לפחות 300ms או כל עוד האצבע לוחצת).
+
+**Decision:** `src/audio/audioEngine.ts` מחזיק `AudioContext` יחיד ברמת המודול. `unlockAudio()` נקרא ראשון בתוך ה-Click של "התחל משחק", משמיע Buffer שקט (לשחרור אודיו ב-iOS), ומחזיר `true` רק כש-`state === 'running'`; דחייה, היעדר Web Audio או `resume()` שלא הסתיים תוך 2000ms → `false`. כל צליל (`playTone`, `playEndSound`) מחזיר `stop` אידמפוטנטי עם Release קצר, והמודול מחזיק את הצלילים הפעילים עבור `stopAllSounds()`. בהצגת הרצף ה-Controller קורא `playTone`/`stop` סביב ה-600ms, וה-Cleanup עוצר את הצליל הנוכחי. צליל הלחיצה מופעל ב-Effect של `pressed` ברבע, כך שהוא מתחיל ונגמר יחד עם ההארה. בכשל פתיחה המשחק נשאר `idle` עם ההודעה **"לא הצלחנו להפעיל את הצליל. לחץ שוב על "התחל משחק"."** (נוסח שאושר בתכנון), והניסיון החוזר הוא "התחל משחק" עצמו.
+
+**Consequences:** הבדיקות מחליפות את המודול ב-Mock (jsdom אינו תומך ב-Web Audio); בדיקות יחידה משתמשות ב-`AudioContext` מזויף. ב-Milestone 4 "המשך משחק" ישתמש באותו `unlockAudio` ובאותה הודעה, ו-`pause` יקרא ל-`stopAllSounds`.
+
+### ADR-6: קונפטי וצליל סיום מופעלים ב-Callback של הודעת הסיום
+
+**Context:** ההודעה, צליל הסיום והקונפטי צריכים להופיע יחד 1000ms אחרי הלחיצה הסופית, פעם אחת בלבד, ולהתבטל ביציאה מהמצב (כלל 11).
+
+**Decision:** ה-Effect הקיים של `won`/`lost` ב-`useGame` מפעיל באותו Callback את `setEndingVisible`, את `playEndSound` ובניצחון בלבד את `fireConfetti()` (`src/effects/confetti.ts`), וה-Cleanup שלו עוצר את שלושתם (`confetti.reset()` מסיר את הקנבס). הקונפטי בארבעת צבעי המשחק, ב-`zIndex` מעל חלונית הסיום; ב-`prefers-reduced-motion: reduce` – פרץ יחיד קטן וקצר במקום סדרת פרצים.
+
+**Consequences:** "אישור" ומעבר ל"אודות" מנקים צליל וקונפטי דרך אותו Cleanup. ב-Milestone 4 יציאה בזמן ההמתנה או ההודעה תעבור באותו מסלול.

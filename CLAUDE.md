@@ -56,4 +56,5 @@ Progress marks, next to the milestone title in MILESTONES.md: no mark = not buil
 ## Run commands
 > Claude fills these in as soon as the app can run (normally at the end of Milestone 1), and updates them if they change.
 - **Run (dev):** `npm run dev` → open `http://localhost:5173/SimonGame/` (Node is at `C:\Program Files\nodejs`; add it to PATH if the shell doesn't find it)
+- **Run for phone testing (same Wi-Fi):** `npm run dev:phone` → open the "Network" address it prints, e.g. `http://<computer-ip>:5173/SimonGame/`
 - **Test:** `npm run test` (also: `npm run typecheck`, `npm run build`)

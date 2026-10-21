@@ -9,9 +9,10 @@ type Props = {
   mode: BoardMode;
   litColor: ColorId | null;
   onPress: (color: ColorId) => void;
+  playTone: (color: ColorId) => () => void;
 };
 
-export default function Board({ mode, litColor, onPress }: Props) {
+export default function Board({ mode, litColor, onPress, playTone }: Props) {
   return (
     <div className={`board${mode === 'presenting' ? ' board--presenting' : ''}`}>
       {COLORS.map((color) => (
@@ -21,6 +22,7 @@ export default function Board({ mode, litColor, onPress }: Props) {
           lit={litColor === color.id}
           enabled={mode === 'input'}
           onPress={onPress}
+          playTone={playTone}
         />
       ))}
       <div className="board__center" aria-hidden="true" />
@@ -33,11 +35,13 @@ type PadProps = {
   lit: boolean;
   enabled: boolean;
   onPress: (color: ColorId) => void;
+  playTone: (color: ColorId) => () => void;
 };
 
 // A press is judged on pointerdown (click only fires on release). The highlight lasts
 // at least PRESS_MIN_MS, or as long as the finger stays down, whichever is longer.
-function Pad({ color, lit, enabled, onPress }: PadProps) {
+// The pad's tone sounds exactly as long as its highlight.
+function Pad({ color, lit, enabled, onPress, playTone }: PadProps) {
   const [pressed, setPressed] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const minElapsed = useRef(true);
@@ -51,6 +55,11 @@ function Pad({ color, lit, enabled, onPress }: PadProps) {
     },
     [],
   );
+
+  useEffect(() => {
+    if (!pressed) return;
+    return playTone(color.id);
+  }, [pressed, playTone, color.id]);
 
   function maybeRelease() {
     if (minElapsed.current && !held.current) setPressed(false);

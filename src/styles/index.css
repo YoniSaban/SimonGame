@@ -263,6 +263,20 @@ button:focus-visible {
   color: var(--soft-gray);
 }
 
+/* ---------- Audio failure message ---------- */
+
+.audio-error {
+  width: min(100%, 300px);
+  margin: var(--space-12) 0 0;
+  padding: var(--space-8) var(--space-12);
+  background: var(--surface);
+  border: 1px solid var(--red);
+  border-radius: var(--radius-card);
+  color: var(--white);
+  font-size: var(--fs-caption);
+  text-align: center;
+}
+
 /* ---------- Buttons ---------- */
 
 /* Fixed height so swapping the button for a hint doesn't shift the layout. */

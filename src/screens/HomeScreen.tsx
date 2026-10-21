@@ -9,8 +9,10 @@ type Props = {
   litColor: ColorId | null;
   shownRound: number;
   endingVisible: boolean;
+  audioError: boolean;
   onStart: () => void;
   onPress: (color: ColorId) => void;
+  playTone: (color: ColorId) => () => void;
   onDismiss: () => void;
 };
 
@@ -32,7 +34,17 @@ const BOARD_MODE: Record<GameState['status'], BoardMode> = {
   lost: 'locked',
 };
 
-export default function HomeScreen({ game, litColor, shownRound, endingVisible, onStart, onPress, onDismiss }: Props) {
+export default function HomeScreen({
+  game,
+  litColor,
+  shownRound,
+  endingVisible,
+  audioError,
+  onStart,
+  onPress,
+  playTone,
+  onDismiss,
+}: Props) {
   const { status } = game;
   const ended = status === 'won' || status === 'lost';
 
@@ -49,11 +61,16 @@ export default function HomeScreen({ game, litColor, shownRound, endingVisible, 
         {STATUS_TEXT[status] ?? ''}
       </p>
       <div className="board-wrap">
-        <Board mode={BOARD_MODE[status]} litColor={litColor} onPress={onPress} />
+        <Board mode={BOARD_MODE[status]} litColor={litColor} onPress={onPress} playTone={playTone} />
         {ended && endingVisible && (
           <EndDialog outcome={status} completedRounds={game.completedRounds} onConfirm={onDismiss} />
         )}
       </div>
+      {status === 'idle' && audioError && (
+        <p className="audio-error" role="alert">
+          לא הצלחנו להפעיל את הצליל. לחץ שוב על "התחל משחק".
+        </p>
+      )}
       <div className="actions">
         {status === 'idle' ? (
           <button type="button" className="btn btn--primary" onClick={onStart}>
