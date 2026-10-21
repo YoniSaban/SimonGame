@@ -13,3 +13,8 @@ export const COLORS: readonly GameColor[] = [
   { id: 'yellow', label: 'צהוב' },
   { id: 'blue', label: 'כחול' },
 ];
+
+// Game randomness only; no need for a cryptographic RNG. Repeats are allowed.
+export function randomColor(): ColorId {
+  return COLORS[Math.floor(Math.random() * COLORS.length)].id;
+}

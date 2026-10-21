@@ -150,27 +150,50 @@ button:focus-visible {
 }
 
 .board__pad--green {
+  --pad-glow: var(--green);
   grid-area: tl;
   background: var(--green);
   border-top-left-radius: 100%;
 }
 
 .board__pad--red {
+  --pad-glow: var(--red);
   grid-area: tr;
   background: var(--red);
   border-top-right-radius: 100%;
 }
 
 .board__pad--yellow {
+  --pad-glow: var(--yellow);
   grid-area: bl;
   background: var(--yellow);
   border-bottom-left-radius: 100%;
 }
 
 .board__pad--blue {
+  --pad-glow: var(--blue);
   grid-area: br;
   background: var(--blue);
   border-bottom-right-radius: 100%;
+}
+
+/* Playback: every pad except the lit one is dimmed. */
+.board--presenting .board__pad:not(.is-lit):not(.is-pressed) {
+  filter: brightness(0.45) saturate(0.7);
+}
+
+.board__pad.is-lit,
+.board__pad.is-pressed {
+  position: relative;
+  z-index: 1;
+  filter: brightness(1.25) saturate(1.1);
+  box-shadow:
+    0 0 18px 4px var(--pad-glow),
+    0 0 42px 10px var(--pad-glow);
+}
+
+.board__pad[aria-disabled='true'] {
+  cursor: default;
 }
 
 .board__center {
@@ -184,15 +207,77 @@ button:focus-visible {
   background: var(--charcoal);
   box-shadow: 0 0 0 4px var(--border);
   pointer-events: none;
+  /* Stays above a glowing pad. */
+  z-index: 2;
+}
+
+/* ---------- End-of-game overlay ---------- */
+
+.board-wrap {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
+
+.end-dialog {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(10, 22, 40, 0.55);
+}
+
+.end-dialog__card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-12);
+  width: min(100%, 320px);
+  padding: var(--space-24) var(--space-16);
+  background: var(--surface);
+  border: 1px solid var(--blue);
+  border-radius: var(--radius-card);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
+}
+
+.end-dialog__title {
+  margin: 0;
+  font-size: var(--fs-h1);
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.end-dialog__title--win {
+  color: var(--green);
+}
+
+.end-dialog__title--loss {
+  color: var(--red);
+}
+
+.end-dialog__text {
+  margin: 0;
+  color: var(--soft-gray);
 }
 
 /* ---------- Buttons ---------- */
 
+/* Fixed height so swapping the button for a hint doesn't shift the layout. */
 .actions {
   width: 100%;
+  min-height: 52px;
   display: flex;
+  align-items: center;
   justify-content: center;
   margin-top: var(--space-12);
+}
+
+.hint {
+  margin: 0;
+  color: var(--text-muted);
 }
 
 .btn {

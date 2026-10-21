@@ -268,3 +268,27 @@ type HistoryData = {
 - `canvas-confetti` ו-`vite-plugin-pwa` יתווספו (בגרסה מדויקת) באבני הדרך שבהן הם נדרשים, ויירשמו כאן.
 
 **Consequences:** `package-lock.json` נשמר ב-Repository; ה-Workflow ב-Milestone 7 ישתמש ב-Node `24.20.0`. שדרוג גרסה מתבצע רק בבקשה מפורשת.
+
+### ADR-2: תזמון הצגת הרצף ב-Hook עם `AbortController` ו-`presentationId`
+
+**Context:** הצגת הרצף היא שרשרת המתנות (1000/600/250ms) שחייבת להיעצר מיד בניווט, בסיום או בהשהיה, גם תחת React Strict Mode שמריץ Effects פעמיים (סעיף 2.3, כלל 5).
+
+**Decision:** `useGame` (`src/game/useGame.ts`) מריץ Effect אחד לכל כניסה ל-`presenting`, התלוי ב-`presentationId`. ההמתנות עוברות דרך `sleep(ms, signal)` שנדחה מיד כשה-`AbortController` מבוטל; ה-Cleanup של ה-Effect מבטל ומכבה את ההארה. הסיום נשלח כ-`presentationDone` עם המזהה שנלכד, וה-Reducer דוחה מזהה מיושן. הצבע האקראי נוצר ב-Hook ומועבר בתוך ה-Action.
+
+**Consequences:** אין Timer יתום אחרי ביטול (נבדק ב-`vi.getTimerCount()`). ב-Milestone 3 הצלילים יתחברו לאותן נקודות, וב-Milestone 4 `pause` ישתמש באותו מנגנון.
+
+### ADR-3: חיווי השלב בהמתנה שבין שלבים נגזר ב-Render
+
+**Context:** לפי כלל 10 ה-Reducer מקדם את `round` מיד בלחיצה הנכונה האחרונה, אבל `DESIGN.md` דורש שהשלב שהושלם יישאר על המסך 1000ms לפני הצגת מספר השלב הבא.
+
+**Decision:** `useGame` שומר `revealedPresentationId`; החיווי מציג `round - 1` כל עוד המצב `presenting`, `round > 1`, וההמתנה הראשונה של ההצגה הנוכחית עדיין לא הסתיימה. הערך נגזר בזמן Render ולא נקבע ב-Effect, כדי שלא יהבהב המספר החדש לפריים אחד.
+
+**Consequences:** ה-Reducer נשאר פשוט ותואם לכלל 10; השהיה (Milestone 4) בזמן ההמתנה הזאת תציג בחידוש את השלב החדש, כנדרש.
+
+### ADR-4: ביטול משחק במעבר ל"אודות" – פתרון זמני
+
+**Context:** ההשהיה האמיתית שייכת ל-Milestone 4, אבל כבר ב-Milestone 2 אסור להשאיר הארה או Timer פעילים כשעוברים ל"אודות".
+
+**Decision:** Action זמני `abort` מחזיר מכל מצב פעיל ל-`idle` ומעלה `presentationId`. `App` שולח אותו לפני מעבר ל"אודות". לא נרשמת תוצאה.
+
+**Consequences:** ב-Milestone 4 הקריאה הזאת תוחלף ב-`pause`, ו-`abort` יוסר או יצומצם.
